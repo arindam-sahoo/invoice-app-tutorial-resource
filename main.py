@@ -109,13 +109,15 @@ def generate_invoice_report(invoice_id):
         print(f"Customer: {rows[0][0]} ({rows[0][1]})")
         print(f"Date: {rows[0][2]}")
         print("\nInvoice Items:")
+        total_quantity = 0
         total_amount = 0
         for row in rows:
             product_name, product_price, quantity = row[3], row[4], row[5]
             amount = product_price * quantity
+            total_quantity += quantity
             total_amount += amount
             print(f"{product_name} - Quantity: {quantity} - Price: ${product_price:.2f} - Amount: ${amount:.2f}")
-
+        print(f"\nTotal Quantity:{total_quantity}")
         print("\nTotal Amount: ${:.2f}".format(total_amount))
     else:
         print(f"No invoice found with ID {invoice_id}")
