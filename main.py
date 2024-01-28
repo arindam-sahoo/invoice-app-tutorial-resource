@@ -46,6 +46,13 @@ def create_database():
     conn.commit()
     conn.close()
 
+def is_number(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
 def add_customer(name, email):
     conn = sqlite3.connect('invoice.db')
     cursor = conn.cursor()
@@ -172,6 +179,10 @@ class InvoiceApp:
     def add_product(self):
         name = self.product_name_entry.get()
         price = self.product_price_entry.get()
+        
+        while not is_number(price) or float(price) < 0:
+            messagebox.showerror("Error", "Please Enter a Positive Numeric Price.")
+            return None
 
         if name and price:
             add_product(name, float(price))
