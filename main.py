@@ -71,16 +71,46 @@ def add_product(name, price):
     conn.commit()
     conn.close()
 
-def create_invoice(customer_id, date, items):
+def get_product_price(product_id):
+    conn = sqlite3.connect('invoice.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT price FROM products WHERE product_id = ?', (product_id,))
+    product_row = cursor.fetchone()
+
+    if product_row:
+        return product_row[0]
+    else:
+        return None
+#Had to pass the labels so to access as this function is not in the class  
+def create_invoice(customer_id, date, items, total_quantity_label, total_rate_label):
     conn = sqlite3.connect('invoice.db')
     cursor = conn.cursor()
 
     cursor.execute('INSERT INTO invoices (customer_id, date) VALUES (?, ?)', (customer_id, date))
     invoice_id = cursor.lastrowid
 
+    total_quantity = 0
+    total_rate = 0
+
     for item in items:
         cursor.execute('INSERT INTO invoice_items (invoice_id, product_id, quantity) VALUES (?, ?, ?)',
                        (invoice_id, item['product_id'], item['quantity']))
+        
+        # Calculate the total quantity and total rate for each item
+        product_price = get_product_price(item['product_id'])  # Assuming get_product_price is a function to retrieve the product price
+        if product_price is not None:
+            # Calculate the total quantity and total rate for each item
+            total_quantity += item['quantity']
+            total_rate += item['quantity'] * product_price
+        else:
+            # Handle the case where the product was not found
+            print(f"Product with product_id {item['product_id']} not found in the database.")
+
+
+    # Update the total quantity and total rate labels
+    total_quantity_label.config(text=f"Total Quantity: {total_quantity}")
+    total_rate_label.config(text=f"Total Rate: ${total_rate:.2f}")
 
     conn.commit()
     conn.close()
@@ -163,6 +193,12 @@ class InvoiceApp:
         self.invoice_items_text = tk.Text(master, height=4, width=40)
         self.invoice_items_text.grid(row=8, column=0, columnspan=2, pady=10)
 
+        self.total_quantity_label = tk.Label(master, text="Total Quantity: 0")
+        self.total_quantity_label.grid(row=12, column=0, columnspan=2, pady=10)
+
+        self.total_rate_label = tk.Label(master, text="Total Rate: $0.00")
+        self.total_rate_label.grid(row=13, column=0, columnspan=2, pady=10)
+
         # Button to create invoice
         tk.Button(master, text="Create Invoice", command=self.create_invoice).grid(row=9, column=0, columnspan=2, pady=10)
 
@@ -197,7 +233,7 @@ class InvoiceApp:
 
         try:
             items = eval(items_text)  # Convert the string representation to a list
-            create_invoice(customer_id, date, items)
+            create_invoice(customer_id, date, items, self.total_quantity_label, self.total_rate_label)
             messagebox.showinfo("Success", "Invoice created successfully.")
         except Exception as e:
             messagebox.showerror("Error", f"Error creating invoice: {str(e)}")
